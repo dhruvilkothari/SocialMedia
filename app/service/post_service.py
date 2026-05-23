@@ -1,4 +1,6 @@
 from fastapi import HTTPException, UploadFile
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy import desc, asc
 from sqlalchemy.orm import Session
 import os
 import uuid
@@ -8,11 +10,15 @@ from app.entity.PostEntity import PostEntity
 
 from app.entity.UserEntity import UserEntity
 from app.schema.post import PostDto
+from typing import List
+
+from app.util.responses import send_success_response
 
 
 class PostService:
     def __init__(self, db: Session):
         self.db = db
+
     def create_post(
         self,
         post_dto: PostDto,
@@ -43,24 +49,17 @@ class PostService:
                 post_dir,
                 new_filename
             )
-
-            # save binary file
             with open(file_location, "wb") as buffer:
-                shutil.copyfileobj(
-                    file.file,
-                    buffer
-                )
-            post_entity = PostEntity(
-                title=post_dto.title,
-                body=post_dto.body,
-                picture=new_filename,
-                owner_id=user_entity.id
-            )
+                shutil.copyfileobj( file.file, buffer)
+            post_entity = PostEntity(title=post_dto.title, body=post_dto.body, picture=new_filename, owner_id=user_entity.id)
             self.db.add(post_entity)
             self.db.commit()
             self.db.refresh(post_entity)
 
-            return post_entity
+            return send_success_response(
+                data={"record": jsonable_encoder(post_entity)},
+                status_code=201
+            )
 
         except HTTPException:
             raise
@@ -72,3 +71,32 @@ class PostService:
             )
         finally:
             file.file.close()
+
+    def get_user_post(
+            self,
+            user_id: int,
+            limit: int = 5,
+            offset: int = 0,
+            sortBy: str = "asc"
+    ):
+        try:
+            query = (
+                self.db.query(PostEntity)
+                .filter(PostEntity.owner_id == user_id)
+            )
+            if sortBy.lower() == "desc":
+                query = query.order_by(desc(PostEntity.created_at))
+            else:
+                query = query.order_by(asc(PostEntity.created_at))
+            post_entity: List[PostEntity] = (query.offset(offset).limit(limit).all())
+            return send_success_response(
+                data={
+                    "record": jsonable_encoder(post_entity)
+                },
+                status_code=200
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=404,
+                detail=str(e)
+            )

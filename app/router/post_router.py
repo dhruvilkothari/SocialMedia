@@ -5,9 +5,9 @@ from fastapi import (
     File,
     Form,
     Depends,
-    HTTPException
+    HTTPException, Query
 )
-
+from typing import Literal
 from sqlalchemy.orm import Session
 from starlette import status
 from starlette.exceptions import HTTPException
@@ -48,3 +48,18 @@ async def create_post(
         file=picture,
         user_id=user_id
     )
+
+@posts_router.get("/all")
+async def get_all_posts(
+    req: Request,
+    limit: int = Query(default=5, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    sort_by: Literal["asc", "desc"] = Query(default="asc"),
+    service: PostService = Depends(get_post_service)
+):
+    user_id = int(req.state.payload["id"])
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN
+        )
+    return service.get_user_post(user_id=user_id, limit=limit, offset=offset, sortBy=sort_by)
