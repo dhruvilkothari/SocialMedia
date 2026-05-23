@@ -96,7 +96,4 @@ class PostService:
                 status_code=200
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=404,
-                detail=str(e)
-            )
+            raise HTTPException(status_code=404, detail=str(e))
