@@ -4,7 +4,7 @@ from wsgiref import headers
 from fastapi import FastAPI, Request, HTTPException
 import uvicorn
 import logging
-
+import os
 from fastapi.exceptions import ValidationException, RequestValidationError
 from pydantic import ValidationError
 
@@ -19,6 +19,8 @@ app = FastAPI(
     title=settings.title,
     description=settings.description,
 )
+os.makedirs(settings.directory, exist_ok=True)
+
 
 @app.middleware("http")
 async def get_token(request: Request, call_next):

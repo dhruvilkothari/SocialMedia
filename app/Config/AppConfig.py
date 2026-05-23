@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str
     jwt_expiry: int
     db_url: str
+    directory: str
 
     class Config:
         env_file = ".env"

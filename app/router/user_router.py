@@ -1,4 +1,4 @@
-from fastapi import Request, Response, APIRouter, Depends, HTTPException
+from fastapi import Request, Response, APIRouter, Depends, HTTPException, File, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from starlette import status
@@ -35,3 +35,10 @@ async def me(request: Request, service: UserService = Depends(get_user_service))
     if not user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     return service.get_my_profile(user_id)
+
+@router.patch("/upload_profile")
+async def upload_pic(req: Request, file: UploadFile = File(...), service: UserService = Depends(get_user_service)):
+    user_id = int(req.state.payload["id"])
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return service.upload_pic(file, user_id)

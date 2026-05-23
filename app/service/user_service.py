@@ -1,8 +1,13 @@
+import uuid
+
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 import asyncio
+import shutil
+import os
+from app.Config.AppConfig import settings
 from app.entity.UserEntity import UserEntity
 from app.schema.user_dto import UserDto, UserLogin
 from app.util.jwt import create_access_token
@@ -71,6 +76,30 @@ class UserService:
         except Exception as e:
             print(e)
             raise HTTPException(status_code=400, detail="Internal server error")
+
+    def upload_pic(self, file, user_id):
+        try:
+
+            user_entity: UserEntity = self.db.query(UserEntity).filter(UserEntity.id == user_id).first()
+            if not user_entity:
+                raise HTTPException(status_code=400, detail="User does not exist")
+            name, ext = os.path.splitext(file.filename)
+
+            # new filename: profile_12.png
+            new_filename = f"{uuid.uuid4()}__userId_{user_id}{ext}"
+
+            file_location = os.path.join(settings.directory, new_filename)
+
+            with open(file_location, "wb+") as file_object:
+                shutil.copyfileobj(file.file, file_object)
+            user_entity.profile_pic = new_filename
+            self.db.commit()
+            self.db.refresh(user_entity)
+            return send_success_response({"record": self.get_user_response(user_entity)})
+        except Exception as e:
+            print(e)
+            raise HTTPException(status_code=400, detail="Internal server error")
+
 
 
 
