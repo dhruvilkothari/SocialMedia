@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.Config.db import get_db
-from app.schema.user_dto import UserDto
+from app.schema.user_dto import UserDto, UserLogin
 from app.service.user_service import UserService
 from app.util.responses import send_success_response
 
@@ -24,3 +24,7 @@ async def read_root(request: Request):
 @router.post("/create")
 async def create_user(request: Request, user_dto: UserDto, service: UserService = Depends(get_user_service)):
     return service.create_user(user_dto)
+
+@router.post("/login")
+async def login_user(request: Request, user_login: UserLogin, service: UserService = Depends(get_user_service)):
+    return service.login_user(user_login)

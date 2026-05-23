@@ -4,6 +4,10 @@ from wsgiref import headers
 from fastapi import FastAPI, Request, HTTPException
 import uvicorn
 import logging
+
+from fastapi.exceptions import ValidationException, RequestValidationError
+from pydantic import ValidationError
+
 from app.Config.AppConfig import  settings
 from app.Config.db import *
 from app.router.user_router import router as user_router
@@ -22,7 +26,7 @@ def on_startup():
 app.include_router(user_router)
 
 
-@app.exception_handler(Exception)
+@app.exception_handler(HTTPException)
 async def global_exception_handler(request: Request, exc: Exception):
     # 1. Log the real error so you can debug it later in your terminal
     logging.error(f"Global exception caught: {str(exc)}", exc_info=True)
@@ -37,10 +41,30 @@ async def global_exception_handler(request: Request, exc: Exception):
             headers= dict(request.headers),
         )
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request,
+    exc: RequestValidationError
+):
+    logging.error(
+        f"Validation exception: {exc.errors()}",
+        exc_info=True
+    )
+
+    return send_error_response(
+        data={
+            "message": "Validation failed",
+            "errors": exc.errors(),   # detailed field errors
+            "status_code": 422
+        },
+        status_code=422
+    )
+
 
 @app.exception_handler(Exception)
 async def global_generic_exception_handler(request: Request, exc: Exception):
     logging.error(f"Unexpected System Crash: {str(exc)}", exc_info=True)
+    logging.info(type(exc))
 
     return send_error_response(
         data={
