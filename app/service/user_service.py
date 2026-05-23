@@ -62,7 +62,7 @@ class UserService:
                 raise HTTPException(status_code=400, detail="User does not exist")
             is_valid_user = verify_password(password, user_entity.password)
             if not is_valid_user:
-                raise HTTPException(status_code=400, detail="Incorrect password/name")
+                raise HTTPException(status_code=403, detail="Incorrect password/name")
             return send_success_response({"record": self.get_user_response(user_entity), "token": create_access_token({"id": user_entity.id})})
 
         except Exception as e:
@@ -115,6 +115,28 @@ class UserService:
                 {"record": self.get_user_response(user_entity)}
             )
 
+        except Exception as e:
+            print(e)
+            self.db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error"
+            )
+
+    def update_profile(self, user_update, user_id):
+        try:
+            user_entity: UserEntity = self.db.query(UserEntity).filter(UserEntity.id == user_id).first()
+            if not user_entity:
+                raise HTTPException(status_code=404, detail="User does not exist")
+            user_update_dict = user_update.dict(exclude_unset=True)
+            for key, value in user_update_dict.items():
+                if key == "password":
+                    setattr(user_entity, key, get_password_hash(value))
+                else:
+                    setattr(user_entity, key, value)
+            self.db.commit()
+            self.db.refresh(user_entity)
+            return send_success_response({"record": self.get_user_response(user_entity)})
         except Exception as e:
             print(e)
             self.db.rollback()

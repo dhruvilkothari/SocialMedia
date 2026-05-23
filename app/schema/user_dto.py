@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator, EmailStr, Field, ValidationError
-
+from typing import Optional
 
 class UserDto(BaseModel):
     name: str = Field(..., description="User's name", min_length=5, max_length=50)
@@ -17,10 +17,6 @@ class UserDto(BaseModel):
         if domain_value.split(".")[0] not in allowed_domain:
             raise ValidationError("Invalid email address")
         return v
-
-
-
-
     class Config:
         schema_extra = {
             "example": {
@@ -36,3 +32,8 @@ class UserDto(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="User's email")
     password: str = Field(..., description="User's password")
+
+
+class UserUpdate(BaseModel):
+    password: str = Field(description="User's password", default=None)
+    name: Optional[str] = Field( description="User's name", min_length=5, max_length=50)

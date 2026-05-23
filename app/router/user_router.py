@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.Config.db import get_db
-from app.schema.user_dto import UserDto, UserLogin
+from app.schema.user_dto import UserDto, UserLogin, UserUpdate
 from app.service.user_service import UserService
 from app.util.responses import send_success_response
 
@@ -42,3 +42,10 @@ async def upload_pic(req: Request, file: UploadFile = File(...), service: UserSe
     if not user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     return service.upload_pic(file, user_id, bg)
+
+@router.patch("/update_profile")
+async def update_profile(req: Request, user_update: UserUpdate, service: UserService = Depends(get_user_service)):
+    user_id = int(req.state.payload["id"])
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return service.update_profile(user_update, user_id)
