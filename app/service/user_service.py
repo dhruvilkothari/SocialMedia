@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -63,7 +63,7 @@ class UserService:
             is_valid_user = verify_password(password, user_entity.password)
             if not is_valid_user:
                 raise HTTPException(status_code=400, detail="Incorrect password/name")
-            return send_success_response({"record": self.get_user_response(user_entity)})
+            return send_success_response({"record": self.get_user_response(user_entity), "token": create_access_token({"id": user_entity.id})})
 
         except Exception as e:
             print(e)
@@ -77,30 +77,50 @@ class UserService:
             print(e)
             raise HTTPException(status_code=400, detail="Internal server error")
 
-    def upload_pic(self, file, user_id):
+    def delete_old_pic(self, path: str):
+        if path and os.path.exists(path):
+            os.remove(path)
+
+    def upload_pic(self, file, user_id, bg: BackgroundTasks = None):
         try:
-
             user_entity: UserEntity = self.db.query(UserEntity).filter(UserEntity.id == user_id).first()
+
             if not user_entity:
-                raise HTTPException(status_code=400, detail="User does not exist")
-            name, ext = os.path.splitext(file.filename)
-
-            # new filename: profile_12.png
+                raise HTTPException(
+                    status_code=404,
+                    detail="User does not exist"
+                )
+            old_pic = user_entity.profile_pic
+            _, ext = os.path.splitext(file.filename)
             new_filename = f"{uuid.uuid4()}__userId_{user_id}{ext}"
-
-            file_location = os.path.join(settings.directory, new_filename)
-
+            file_location = os.path.join(
+                settings.directory,
+                new_filename
+            )
             with open(file_location, "wb+") as file_object:
                 shutil.copyfileobj(file.file, file_object)
+
+            # update DB
             user_entity.profile_pic = new_filename
             self.db.commit()
             self.db.refresh(user_entity)
-            return send_success_response({"record": self.get_user_response(user_entity)})
+            if bg and old_pic:
+                old_path = os.path.join(
+                    settings.directory,
+                    old_pic
+                )
+                bg.add_task(self.delete_old_pic, old_path)
+
+            return send_success_response(
+                {"record": self.get_user_response(user_entity)}
+            )
+
         except Exception as e:
             print(e)
-            raise HTTPException(status_code=400, detail="Internal server error")
-
-
-
+            self.db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error"
+            )
 
 
