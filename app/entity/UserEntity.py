@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy.orm import  relationship
 from datetime import datetime
 from app.Config.db import Base
 class UserEntity(Base):
@@ -22,5 +23,10 @@ class UserEntity(Base):
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow
+    )
+    posts = relationship(
+        "PostEntity",
+        back_populates="owner",
+        cascade="all, delete-orphan"
     )
 

@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from app.Config.AppConfig import  settings
 from app.Config.db import *
 from app.middleware.security import get_token
+from app.router.post_router import posts_router
 from app.router.user_router import router as user_router
 from app.util.jwt import verify_token
 from app.util.responses import send_error_response
@@ -48,6 +49,7 @@ def on_startup():
     print("Tables created successfully")
 
 app.include_router(user_router)
+app.include_router(posts_router)
 
 
 @app.exception_handler(HTTPException)
