@@ -10,13 +10,35 @@ from pydantic import ValidationError
 
 from app.Config.AppConfig import  settings
 from app.Config.db import *
+from app.middleware.security import get_token
 from app.router.user_router import router as user_router
+from app.util.jwt import verify_token
 from app.util.responses import send_error_response
 
 app = FastAPI(
     title=settings.title,
     description=settings.description,
 )
+
+@app.middleware("http")
+async def get_token(request: Request, call_next):
+    print("CALLING MIDDLEWARE")
+    auth_header = request.headers.get("Authorization")
+    print(auth_header)
+
+
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            payload = verify_token(request)
+            print(payload)
+            request.state.payload = payload
+        except Exception:
+            request.state.payload = None
+    else:
+        request.state.payload = None
+
+    response = await call_next(request)
+    return response
 
 @app.on_event("startup")
 def on_startup():

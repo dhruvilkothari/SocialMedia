@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import asyncio
 from app.entity.UserEntity import UserEntity
 from app.schema.user_dto import UserDto, UserLogin
+from app.util.jwt import create_access_token
 from app.util.password import get_password_hash, verify_password
 from app.util.responses import send_success_response
 
@@ -12,6 +13,17 @@ from app.util.responses import send_success_response
 class UserService:
     def __init__(self, db: Session):
         self.db = db
+    def get_user_response(self, user_entity: UserEntity)->dict:
+        response_data = {
+            "id": user_entity.id,
+            "email": user_entity.email,
+            "name": user_entity.name,
+            "profile_pic": user_entity.profile_pic,
+            "created_at": user_entity.created_at.isoformat(),
+            "updated_at": user_entity.updated_at.isoformat(),
+            "is_active": user_entity.is_active,
+        }
+        return response_data
 
     def create_user(self, user_dto: UserDto):
         try :
@@ -24,16 +36,8 @@ class UserService:
             self.db.add(user_entity)
             self.db.commit()
             self.db.refresh(user_entity)
-            response_data = {
-                "id": user_entity.id,
-                "email": user_entity.email,
-                "name": user_entity.name,
-                "profile_pic": user_entity.profile_pic,
-                "created_at": user_entity.created_at.isoformat(),
-                "updated_at": user_entity.updated_at.isoformat(),
-                "is_active": user_entity.is_active,
-            }
-            return send_success_response({"record":response_data})
+
+            return send_success_response({"record": self.get_user_response(user_entity)})
         except IntegrityError as e:
             print(e)
             self.db.rollback()
@@ -54,17 +58,16 @@ class UserService:
             is_valid_user = verify_password(password, user_entity.password)
             if not is_valid_user:
                 raise HTTPException(status_code=400, detail="Incorrect password/name")
-            response_data = {
-                "id": user_entity.id,
-                "email": user_entity.email,
-                "name": user_entity.name,
-                "profile_pic": user_entity.profile_pic,
-                "created_at": user_entity.created_at.isoformat(),
-                "updated_at": user_entity.updated_at.isoformat(),
-                "is_active": user_entity.is_active,
-            }
-            return send_success_response({"record": response_data})
+            return send_success_response({"record": self.get_user_response(user_entity)})
 
+        except Exception as e:
+            print(e)
+            raise HTTPException(status_code=400, detail="Internal server error")
+
+    def get_my_profile(self, user_id):
+        try:
+            user_entity = self.db.query(UserEntity).filter(UserEntity.id == user_id).first()
+            return send_success_response({"record": self.get_user_response(user_entity)})
         except Exception as e:
             print(e)
             raise HTTPException(status_code=400, detail="Internal server error")

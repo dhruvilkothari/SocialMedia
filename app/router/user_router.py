@@ -1,4 +1,4 @@
-from fastapi import Request, Response, APIRouter, Depends
+from fastapi import Request, Response, APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from starlette import status
@@ -28,3 +28,10 @@ async def create_user(request: Request, user_dto: UserDto, service: UserService 
 @router.post("/login")
 async def login_user(request: Request, user_login: UserLogin, service: UserService = Depends(get_user_service)):
     return service.login_user(user_login)
+
+@router.get("/me")
+async def me(request: Request, service: UserService = Depends(get_user_service)):
+    user_id = int(request.state.payload["id"])
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return service.get_my_profile(user_id)
