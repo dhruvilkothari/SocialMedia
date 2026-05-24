@@ -46,3 +46,5 @@ class UserEntity(Base):
         cascade="all, delete-orphan"
     )
 
+    def __repr__(self):
+        return f"{self.name} - {self.email} following = {self.following}  followe = {self.followers}"

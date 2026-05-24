@@ -56,3 +56,11 @@ async def follow(req: Request, user_follow_dto:UserFollow, service: UserService 
     if not user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     return service.follow_user(user_id, user_follow_dto)
+
+@router.post("/unfollow")
+async def follow(req: Request, user_follow_dto:UserFollow, service: UserService = Depends(get_user_service)):
+    user_id = int(req.state.payload["id"])
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return service.unfollow_user(user_id, user_follow_dto)
+

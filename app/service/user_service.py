@@ -238,4 +238,70 @@ class UserService:
                 detail="Internal Server Error"
             )
 
+    def unfollow_user(self, user_id: int, user_follow_dto: UserFollow):
+        try :
+            current_user_entity = (
+                self.db.query(UserEntity)
+                .filter(UserEntity.id == user_id)
+                .first()
+            )
+
+            if not current_user_entity:
+                raise HTTPException(
+                    status_code=403,
+                    detail="User Not Logged In"
+                )
+
+            target_user_id = user_follow_dto.target_user_id
+
+            target_user_entity = (
+                self.db.query(UserEntity)
+                .filter(UserEntity.id == target_user_id)
+                .first()
+            )
+
+            if not target_user_entity:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User Does not Exist"
+                )
+
+            if target_user_id == current_user_entity.id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="User cannot unfollow himself"
+                )
+
+            if target_user_entity not in current_user_entity.following:
+                raise HTTPException(
+                    status_code=400,
+                    detail="User Already not following this user"
+                )
+            print(current_user_entity)
+            print(target_user_entity)
+            current_user_entity.following.remove(target_user_entity)
+            self.db.commit()
+            self.db.refresh(current_user_entity)
+            self.db.refresh(target_user_entity)
+            return send_success_response({"record": self.get_user_response(current_user_entity)})
+        except HTTPException as exp:
+            self.db.rollback()
+            raise exp
+
+        except IntegrityError:
+            self.db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail="Duplicate follow relation"
+            )
+
+        except Exception as exp:
+            self.db.rollback()
+            print(exp)
+            raise HTTPException(
+                status_code=500,
+                detail="Internal Server Error"
+            )
+
+
 
