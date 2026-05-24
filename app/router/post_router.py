@@ -63,3 +63,15 @@ async def get_all_posts(
             status_code=status.HTTP_403_FORBIDDEN
         )
     return service.get_user_post(user_id=user_id, limit=limit, offset=offset, sortBy=sort_by)
+
+@posts_router.get("/user/{post_id}")
+async def get_user_post_by_id(
+    req: Request, post_id: int, service: PostService = Depends(get_post_service)
+) -> dict | None:
+    user_id = int(req.state.payload["id"])
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User Not Logged In"
+        )
+    return service.get_post_by_id(user_id=user_id, post_id=post_id)

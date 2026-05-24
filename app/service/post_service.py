@@ -97,3 +97,27 @@ class PostService:
             )
         except Exception as e:
             raise HTTPException(status_code=404, detail=str(e))
+
+    def get_post_by_id(self, user_id, post_id):
+        try :
+            post_entity: PostEntity | None = self.db.query(PostEntity).filter(
+                PostEntity.id == post_id, PostEntity.owner_id == user_id
+            ).first()
+
+            if not post_entity:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Post Not Found For User"
+                )
+            return send_success_response(
+                data={
+                    "record": jsonable_encoder(post_entity)
+                },
+                status_code=200
+            )
+        except Exception as exp:
+            print(exp)
+            if isinstance(exp, HTTPException):
+                raise HTTPException(status_code=exp.status_code, detail=exp.detail)
+
+            raise HTTPException(status_code=500, detail="Internal Server Error")

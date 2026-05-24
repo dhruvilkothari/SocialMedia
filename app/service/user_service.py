@@ -1,10 +1,7 @@
 import uuid
 
 from fastapi import HTTPException, BackgroundTasks
-from fastapi.encoders import jsonable_encoder
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-import asyncio
 import shutil
 import os
 from app.Config.AppConfig import settings
