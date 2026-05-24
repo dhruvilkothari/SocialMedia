@@ -4,7 +4,7 @@ import jwt
 from fastapi import HTTPException, Request, status
 
 from app.Config.AppConfig import settings
-
+import logging
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -26,9 +26,11 @@ def create_access_token(data: dict):
 
 def verify_token(req: Request):
     try:
+        logging.log(logging.INFO, "Verifying token")
         auth_header = req.headers.get("Authorization")
-
+        print("Auth Header: ", auth_header)
         if not auth_header:
+            print("Auth Header is empty")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Authentication credentials were not provided."

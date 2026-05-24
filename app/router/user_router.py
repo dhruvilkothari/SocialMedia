@@ -31,24 +31,24 @@ async def login_user(request: Request, user_login: UserLogin, service: UserServi
 
 @router.get("/me")
 async def me(request: Request, service: UserService = Depends(get_user_service)):
-    user_id = int(request.state.payload["id"])
+    user_id = request.state.payload.get("id", None)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return service.get_my_profile(user_id)
+    return service.get_my_profile(int(user_id))
 
 @router.patch("/upload_profile")
 async def upload_pic(req: Request, file: UploadFile = File(...), service: UserService = Depends(get_user_service), bg: BackgroundTasks= BackgroundTasks()):
-    user_id = int(req.state.payload["id"])
+    user_id = req.state.payload.get("id", None)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return service.upload_pic(file, user_id, bg)
+    return service.upload_pic(file, int(user_id), bg)
 
 @router.patch("/update_profile")
 async def update_profile(req: Request, user_update: UserUpdate, service: UserService = Depends(get_user_service)):
-    user_id = int(req.state.payload["id"])
+    user_id = req.state.payload.get("id", None)
     if not user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return service.update_profile(user_update, user_id)
+    return service.update_profile(user_update, int(user_id))
 
 @router.post("/follow")
 async def follow(req: Request, user_follow_dto:UserFollow, service: UserService = Depends(get_user_service)):

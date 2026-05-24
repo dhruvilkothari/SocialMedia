@@ -7,6 +7,7 @@ import logging
 import os
 from fastapi.exceptions import ValidationException, RequestValidationError
 from pydantic import ValidationError
+from starlette import status
 
 from app.Config.AppConfig import  settings
 from app.Config.db import *
@@ -33,12 +34,18 @@ async def get_token(request: Request, call_next):
     if auth_header and auth_header.startswith("Bearer "):
         try:
             payload = verify_token(request)
-            print(payload)
+            print("PAYLOAD is ", payload)
+
             request.state.payload = payload
         except Exception:
             request.state.payload = None
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     else:
-        request.state.payload = None
+        request.state.payload = {}
 
     response = await call_next(request)
     return response

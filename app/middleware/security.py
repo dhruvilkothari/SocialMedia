@@ -1,4 +1,6 @@
-from fastapi import Request
+from fastapi import Request, HTTPException
+from starlette import status
+
 from app.util.jwt import verify_token   # renamed from jwt.py ideally
 
 
@@ -12,7 +14,8 @@ async def get_token(request: Request, call_next):
             print(f"Payload: {payload}")
         except Exception:
             request.state.payload = None
-            raise Exception ("Invalid token")
+            print(f"In Exception Block")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     else:
         request.state.payload = None
 
