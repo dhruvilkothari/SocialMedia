@@ -9,11 +9,12 @@ import shutil
 import os
 from app.Config.AppConfig import settings
 from app.entity.UserEntity import UserEntity
-from app.schema.user_dto import UserDto, UserLogin
+from app.schema.user_dto import UserDto, UserLogin, UserFollow
 from app.util.jwt import create_access_token
 from app.util.password import get_password_hash, verify_password
 from app.util.responses import send_success_response
-
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 
 class UserService:
     def __init__(self, db: Session):
@@ -26,6 +27,25 @@ class UserService:
             "profile_pic": user_entity.profile_pic,
             "created_at": user_entity.created_at.isoformat(),
             "updated_at": user_entity.updated_at.isoformat(),
+            "followers": [
+            {
+                "id": follower.id,
+                "name": follower.name,
+                "email": follower.email,
+                "profile_pic": follower.profile_pic
+            }
+            for follower in user_entity.followers
+        ],
+
+        "following": [
+            {
+                "id": following.id,
+                "name": following.name,
+                "email": following.email,
+                "profile_pic": following.profile_pic
+            }
+            for following in user_entity.following
+        ],
             "is_active": user_entity.is_active,
         }
         return response_data
@@ -143,6 +163,79 @@ class UserService:
             raise HTTPException(
                 status_code=500,
                 detail="Internal server error"
+            )
+
+
+
+    def follow_user(self, user_id: int, user_follow_dto: UserFollow):
+        try:
+            current_user_entity = (
+                self.db.query(UserEntity)
+                .filter(UserEntity.id == user_id)
+                .first()
+            )
+
+            if not current_user_entity:
+                raise HTTPException(
+                    status_code=403,
+                    detail="User Not Logged In"
+                )
+
+            target_user_id = user_follow_dto.target_user_id
+
+            target_user_entity = (
+                self.db.query(UserEntity)
+                .filter(UserEntity.id == target_user_id)
+                .first()
+            )
+
+            if not target_user_entity:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User Does not Exist"
+                )
+
+            if target_user_id == current_user_entity.id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="User cannot follow self"
+                )
+
+            # prevent duplicate follow
+            if target_user_entity in current_user_entity.following:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Already following this user"
+                )
+
+            current_user_entity.following.append(target_user_entity)
+
+            self.db.commit()
+            self.db.refresh(current_user_entity)
+            self.db.refresh(target_user_entity)
+
+            return send_success_response({
+                "record1": self.get_user_response(current_user_entity),
+                "record2": self.get_user_response(target_user_entity)
+            })
+
+        except HTTPException as exp:
+            self.db.rollback()
+            raise exp
+
+        except IntegrityError:
+            self.db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail="Duplicate follow relation"
+            )
+
+        except Exception as exp:
+            self.db.rollback()
+            print(exp)
+            raise HTTPException(
+                status_code=500,
+                detail="Internal Server Error"
             )
 
 

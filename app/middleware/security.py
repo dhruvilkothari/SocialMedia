@@ -12,6 +12,7 @@ async def get_token(request: Request, call_next):
             print(f"Payload: {payload}")
         except Exception:
             request.state.payload = None
+            raise Exception ("Invalid token")
     else:
         request.state.payload = None
 

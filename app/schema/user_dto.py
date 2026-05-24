@@ -37,3 +37,13 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     password: str = Field(description="User's password", default=None)
     name: Optional[str] = Field( description="User's name", min_length=5, max_length=50)
+
+class UserFollow(BaseModel):
+    target_user_id: int = Field(..., description="Target user id", title="Target user id")
+    class Config:
+        schema_extra = {
+            "example": {
+                "target_user_id": 1,
+            }
+        }
+        from_attributes = True

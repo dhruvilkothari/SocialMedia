@@ -1,7 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from sqlalchemy.orm import  relationship
 from datetime import datetime
 from app.Config.db import Base
+from sqlalchemy.orm import relationship
+from app.entity.FollowerEntity import followers
+
 class UserEntity(Base):
     __tablename__ = "user_record"
 
@@ -14,8 +16,22 @@ class UserEntity(Base):
     password = Column(String(255), nullable=False)
 
     profile_pic = Column(String(500), nullable=True)
-
     is_active = Column(Boolean, default=True)
+    following = relationship(
+        "UserEntity",
+        secondary=followers,
+        primaryjoin=id == followers.c.follower_id,
+        secondaryjoin=id == followers.c.following_id,
+        back_populates="followers"
+    )
+
+    followers = relationship(
+        "UserEntity",
+        secondary=followers,
+        primaryjoin=id == followers.c.following_id,
+        secondaryjoin=id == followers.c.follower_id,
+        back_populates="following"
+    )
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
