@@ -3,6 +3,8 @@ from datetime import datetime
 from app.Config.db import Base
 from sqlalchemy.orm import relationship
 from app.entity.FollowerEntity import followers
+from app.entity.PostLikeEntity import PostLikeEntity
+
 
 class UserEntity(Base):
     __tablename__ = "user_record"
@@ -44,6 +46,11 @@ class UserEntity(Base):
         "PostEntity",
         back_populates="owner",
         cascade="all, delete-orphan"
+    )
+    liked_posts = relationship(
+        "PostEntity",
+        secondary=PostLikeEntity,
+        back_populates="liked_by"
     )
 
     def __repr__(self):

@@ -75,3 +75,13 @@ async def get_user_post_by_id(
             detail="User Not Logged In"
         )
     return service.get_post_by_id(user_id=user_id, post_id=post_id)
+
+@posts_router.post("/{post_id}/like")
+async def like_post(req: Request, post_id: int, service: PostService = Depends(get_post_service)):
+    user_id = int(req.state.payload["id"])
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User Not Logged In"
+        )
+    return service.like_or_dislike_post(user_id=user_id, post_id=post_id)

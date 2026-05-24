@@ -4,6 +4,8 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.Config.db import Base
+from app.entity.PostLikeEntity import PostLikeEntity
+
 class PostEntity(Base):
     __tablename__ = "post_record"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -22,5 +24,14 @@ class PostEntity(Base):
         "UserEntity",
         back_populates="posts"
     )
+    liked_by = relationship(
+        "UserEntity",
+        secondary=PostLikeEntity,
+        back_populates="liked_posts"
+    )
+
+    def __repr__(self):
+        return f"{self.title} is Liked by {list(self.liked_by)}"
+
     class Config:
         from_attributes = True

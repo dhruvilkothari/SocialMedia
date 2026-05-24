@@ -55,7 +55,7 @@ class PostService:
             self.db.add(post_entity)
             self.db.commit()
             self.db.refresh(post_entity)
-
+            print("POST ENTITY is " , post_entity)
             return send_success_response(
                 data={"record": jsonable_encoder(post_entity)},
                 status_code=201
@@ -121,3 +121,43 @@ class PostService:
                 raise HTTPException(status_code=exp.status_code, detail=exp.detail)
 
             raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    def like_or_dislike_post(self, user_id, post_id):
+        try:
+            user_entity: UserEntity = self.db.query(UserEntity).filter(
+                UserEntity.id == user_id
+            ).first()
+            if not user_entity:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found"
+                )
+            post_entity: PostEntity | None = self.db.query(PostEntity).filter(
+                PostEntity.id == post_id,
+            ).first()
+            if not post_entity:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Post Not Found"
+                )
+            if user_entity in post_entity.liked_by:
+                post_entity.liked_by.remove(user_entity)
+                post_entity.like_count-=1
+            else:
+                post_entity.liked_by.append(user_entity)
+                post_entity.like_count+=1
+            self.db.commit()
+            self.db.refresh(post_entity)
+            self.db.refresh(user_entity)
+            return send_success_response(
+                status_code=200,
+                data=None
+            )
+
+        except Exception as exp:
+            print(exp)
+            if isinstance(exp, HTTPException):
+                raise HTTPException(status_code=exp.status_code, detail=exp.detail)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
