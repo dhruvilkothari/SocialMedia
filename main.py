@@ -12,6 +12,7 @@ from starlette import status
 from app.Config.AppConfig import  settings
 from app.Config.db import *
 from app.middleware.security import get_token
+from app.router.comment_router import router as comment_router
 from app.router.post_router import posts_router
 from app.router.user_router import router as user_router
 from app.util.jwt import verify_token
@@ -57,6 +58,7 @@ def on_startup():
 
 app.include_router(user_router)
 app.include_router(posts_router)
+app.include_router(comment_router)
 
 
 @app.exception_handler(HTTPException)
