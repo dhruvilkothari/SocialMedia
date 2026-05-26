@@ -13,6 +13,7 @@ from starlette import status
 from starlette.exceptions import HTTPException
 
 from app.Config.db import get_db
+from app.schema.comment import CommentDto
 from app.schema.post import PostDto
 from app.service.post_service import PostService
 
@@ -85,3 +86,17 @@ async def like_post(req: Request, post_id: int, service: PostService = Depends(g
             detail="User Not Logged In"
         )
     return service.like_or_dislike_post(user_id=user_id, post_id=post_id)
+
+@posts_router.post("/{post_id}/comment}")
+async def comment_post(
+        req: Request, post_id: int, commentDto: CommentDto, service: PostService = Depends(get_post_service),
+):
+    try :
+        user_id = int(req.state.payload["id"])
+    except Exception as e :
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User Not Logged In"
+        )
+
+    return service.add_comment(commentDto=commentDto, post_id=post_id, user_id= user_id)

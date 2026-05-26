@@ -6,6 +6,7 @@ import os
 import uuid
 import shutil
 from app.Config.AppConfig import settings
+from app.entity.CommentEntity import CommentEntity
 from app.entity.PostEntity import PostEntity
 
 from app.entity.UserEntity import UserEntity
@@ -156,6 +157,44 @@ class PostService:
 
         except Exception as exp:
             print(exp)
+            if isinstance(exp, HTTPException):
+                raise HTTPException(status_code=exp.status_code, detail=exp.detail)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    def add_comment(self, commentDto, post_id, user_id):
+
+        try:
+            post_entity: PostEntity | None = self.db.query(PostEntity).filter(
+                PostEntity.id == post_id
+            ).first()
+            if post_entity is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Post Not Found"
+                )
+            user_entity: UserEntity | None = self.db.query(UserEntity).filter(
+                UserEntity.id == user_id
+            ).first()
+            if user_entity is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="User not found"
+                )
+            comment_entity: CommentEntity = CommentEntity(
+                body=commentDto.body,
+                user_id = user_id,
+                post_id = post_id,
+                parent_comment_id = None,
+            )
+            self.db.add(comment_entity)
+            self.db.commit()
+            self.db.refresh(comment_entity)
+            return send_success_response(
+                status_code=204,
+                data=None
+            )
+
+        except Exception as exp:
             if isinstance(exp, HTTPException):
                 raise HTTPException(status_code=exp.status_code, detail=exp.detail)
             raise HTTPException(status_code=500, detail="Internal Server Error")
